@@ -1,35 +1,68 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
-
-import "hardhat/console.sol";
-import "./ExampleExternalContract.sol";
-
+// SPDX-License-Identifier: MIT 
+pragma solidity ^0.8.4;
+ 
+import "hardhat/console.sol"; 
+import "./ExampleExternalContract.sol"; 
+ 
+ 
 contract Staker {
-
-  ExampleExternalContract public exampleExternalContract;
-
-  constructor(address exampleExternalContractAddress) public {
-      exampleExternalContract = ExampleExternalContract(exampleExternalContractAddress);
+ 
+  ExampleExternalContract public exampleExternalContract; 
+ 
+  uint256 public duedate = block.timestamp + 72 hours;
+  event Stake(address indexed sender, uint256 amount); 
+  mapping(address => uint256) public userBalance; 
+  uint256 public constant minimum = 1 ether; 
+  
+  modifier stakeIncomplete() {
+    bool completed = exampleExternalContract.completed();
+    require(!completed, "staking process already completed");
+    _;
+  }
+  
+  modifier duedateReached( bool requireReached ) {
+    uint256 timeLeft = timeLeft();
+    if( requireReached ) {
+      require(timeLeft == 0, "Due date not reached yet");
+    } else {
+      require(timeLeft > 0, "Due date is already passed");
+    }
+    _;
+  }
+  
+  constructor(address exampleExternalContractAddress) {
+    exampleExternalContract = ExampleExternalContract(exampleExternalContractAddress);
   }
 
-  // Collect funds in a payable `stake()` function and track individual `balances` with a mapping:
-  //  ( make sure to add a `Stake(address,uint256)` event and emit it for the frontend <List/> display )
+  function execute() public stakeIncomplete duedateReached(false) {
+    uint256 contractBalance = address(this).balance;
 
-
-  // After some `deadline` allow anyone to call an `execute()` function
-  //  It should either call `exampleExternalContract.complete{value: address(this).balance}()` to send all the value
-
-
-  // if the `threshold` was not met, allow everyone to call a `withdraw()` function
-
-
-  // Add a `withdraw()` function to let users withdraw their balance
-
-
-  // Add a `timeLeft()` view function that returns the time left before the deadline for the frontend
-
-
-  // Add the `receive()` special function that receives eth and calls stake()
-
-
+    // check the contract has enough ETH to reach the treshold
+    require(contractBalance >= minimum, "Minimum amount not reached");
+ 
+    (bool sent,) = address(exampleExternalContract).call{value: contractBalance}(abi.encodeWithSignature("complete()"));
+    require(sent, "exampleExternalContract.complete failed");
+  }
+ 
+  function stake() public payable stakeIncomplete duedateReached(false){
+    userBalance[msg.sender] += msg.value;
+    emit Stake(msg.sender, msg.value);
+  }
+ 
+  function withdraw() public stakeIncomplete duedateReached(true){
+    uint256 userBalances = userBalance[msg.sender]; 
+    require(userBalances > 0, "Balance too low");
+ 
+    userBalance[msg.sender] = 0; 
+    (bool sent,) = msg.sender.call{value: userBalances}("");
+    require(sent, "Transfer failed");
+  }
+ 
+  function timeLeft() public view returns (uint256 timeleft) {
+    if( block.timestamp >= duedate ) {
+      return 0;
+    } else {
+      return duedate - block.timestamp;
+    }
+  }
 }
