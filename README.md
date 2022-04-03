@@ -1,4 +1,4 @@
-### BLOCKGAMES INTERNSHIP GAME PHASE TASK 1
+# BLOCKGAMES INTERNSHIP GAME PHASE TASK 1
 ### Recreate challenges 0 - 2 from https://speedrunethereum.com/
 ### SITE URLs
 #### Challenge 0
