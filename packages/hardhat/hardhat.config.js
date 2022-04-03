@@ -40,7 +40,7 @@ function mnemonic() {
 module.exports = {
   defaultNetwork,
 
-  // if you want to deploy to a testnet, mainnet, or xdainnnnnn, you will need to configure:
+  // if you want to deploy to a testnet, mainnet, or xdai, you will need to configure:
   // 1. An Infura key (or similar)
   // 2. A private key for the deployer
   // DON'T PUSH THESE HERE!!!
